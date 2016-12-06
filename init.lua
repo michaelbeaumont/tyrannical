@@ -15,9 +15,11 @@ local module,c_rules,tags_hash,settings,fallbacks = {},{class={},instance={}},{}
 
 --Called when a tag is selected/unselected
 local function on_selected_change(tag,data)
-    if data and data.exec_once and tag.selected then
+    if data and data.exec_once and tag.selected and #tag:clients() < 1 then
         for _,v in ipairs(type(data.exec_once) == "string" and {data.exec_once} or data.exec_once) do
-            awful.spawn.with_shell("ps -ef | grep -v grep | grep '" .. v .. "' > /dev/null || (" .. v .. ")")
+            --awful.spawn.with_shell("ps -ef | grep -v grep | grep '" .. v .. "' > /dev/null || (" .. v .. ")")
+            local cmd = type(v) == 'table' and table.concat(v, ' ') or v
+            awful.spawn.with_shell("(" .. cmd .. ")")
         end
     end
 end
@@ -114,7 +116,9 @@ function module.focus_client(c,properties)
         local tags = c:tags()
 
         if #tags > 0 and not has_selected(tags, c.screen) and not tags[1].no_focus_stealing_in then
-            c:tags()[1]:view_only()
+            if c:tags()[1] then
+                c:tags()[1]:view_only()
+            end
         end
 
         capi.client.focus = c
